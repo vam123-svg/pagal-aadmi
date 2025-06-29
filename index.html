@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scriptoid - Professional AI Agent Platform</title>
+    <title>Scriptoid - AI Agent Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.waves.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -34,15 +33,6 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
-        }
-
-        #vanta-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
         }
 
         .container {
@@ -410,11 +400,95 @@
         .speaking .avatar-mouth {
             animation: speak 0.4s infinite;
         }
+
+        /* Waveform animation */
+        .waveform {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 40px;
+            gap: 3px;
+            margin: 15px 0;
+        }
+
+        .waveform-bar {
+            width: 4px;
+            background: var(--secondary);
+            border-radius: 2px;
+            animation: waveform 1.2s infinite ease-in-out;
+        }
+
+        @keyframes waveform {
+            0%, 100% { height: 10px; }
+            50% { height: 25px; }
+        }
+
+        .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+        .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+        .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+        .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+        .waveform-bar:nth-child(6) { animation-delay: 0.5s; }
+        .waveform-bar:nth-child(7) { animation-delay: 0.6s; }
+        .waveform-bar:nth-child(8) { animation-delay: 0.7s; }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: inline-flex;
+            gap: 5px;
+            padding-top: 10px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--light);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        /* Emotion buttons */
+        .emotion-selector {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .emotion-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--light);
+        }
+
+        .emotion-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .emotion-btn.active {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
-    <div id="vanta-bg"></div>
-    
     <div class="container">
         <header>
             <div class="logo">
@@ -460,6 +534,14 @@
                 <div class="language-selector">
                     <button class="lang-btn active" data-lang="en">English</button>
                     <button class="lang-btn" data-lang="hi">हिंदी (Hindi)</button>
+                </div>
+                
+                <div class="emotion-selector">
+                    <button class="emotion-btn" data-emotion="neutral"><i class="fas fa-meh"></i></button>
+                    <button class="emotion-btn" data-emotion="happy"><i class="fas fa-smile"></i></button>
+                    <button class="emotion-btn" data-emotion="sad"><i class="fas fa-frown"></i></button>
+                    <button class="emotion-btn" data-emotion="surprised"><i class="fas fa-surprise"></i></button>
+                    <button class="emotion-btn" data-emotion="angry"><i class="fas fa-angry"></i></button>
                 </div>
             </div>
             
@@ -557,23 +639,6 @@
     </div>
 
     <script>
-        // Initialize Vanta.js background
-        VANTA.WAVES({
-            el: "#vanta-bg",
-            mouseControls: true,
-            touchControls: true,
-            gyroControls: false,
-            minHeight: 200.00,
-            minWidth: 200.00,
-            scale: 1.00,
-            scaleMobile: 1.00,
-            color: 0x1e293b,
-            shininess: 35.00,
-            waveHeight: 15.00,
-            waveSpeed: 0.85,
-            zoom: 0.75
-        });
-
         // Initialize Three.js for the avatar
         let scene, camera, renderer, avatar;
         
@@ -675,6 +740,7 @@
             const micBtn = document.getElementById('mic-btn');
             const restartBtn = document.getElementById('restart-btn');
             const langButtons = document.querySelectorAll('.lang-btn');
+            const emotionButtons = document.querySelectorAll('.emotion-btn');
             
             let isListening = false;
             let currentLanguage = 'en';
@@ -772,6 +838,18 @@
                     addMessage(`System: ${langMsg}`, 'system');
                 });
             });
+            
+            // Emotion selection
+            emotionButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    emotionButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // In a real implementation, this would change the avatar's expression
+                    const emotion = btn.dataset.emotion;
+                    addMessage(`System: Changed avatar expression to ${emotion}`, 'system');
+                });
+            });
         }
         
         function processInput(message) {
@@ -792,10 +870,16 @@
                 const aiResponse = generateAIResponse(message);
                 
                 // Add AI response
-                addMessage(aiResponse, 'ai');
+                const aiMessage = addMessage(aiResponse, 'ai');
+                
+                // Add TTS waveform visualization
+                addWaveform(aiMessage);
                 
                 // Simulate speaking animation
                 simulateSpeaking();
+                
+                // Simulate TTS audio playback
+                simulateTTS();
             }, 1500);
         }
         
@@ -819,7 +903,7 @@
                         <i class="fas fa-robot"></i>
                         <span>${isTyping ? 'Scriptoid AI is typing...' : 'Scriptoid AI'}</span>
                     </div>
-                    <div>${isTyping ? '<div class="typing-indicator"><span></span><span></span><span></span></div>' : text}</div>
+                    <div>${isTyping ? '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>' : text}</div>
                 `;
             } else {
                 messageDiv.className = 'message system-message';
@@ -836,6 +920,30 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
             
             return messageDiv;
+        }
+        
+        function addWaveform(messageElement) {
+            const waveformDiv = document.createElement('div');
+            waveformDiv.className = 'waveform';
+            waveformDiv.innerHTML = `
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+            `;
+            
+            // Insert after the message content
+            const contentDiv = messageElement.querySelector('div:last-child');
+            contentDiv.appendChild(waveformDiv);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                waveformDiv.remove();
+            }, 3000);
         }
         
         function generateAIResponse(input) {
@@ -881,6 +989,12 @@
                     avatarCanvas.classList.remove('speaking');
                 }, 2000 + Math.random() * 3000);
             }
+        }
+        
+        function simulateTTS() {
+            // In a real implementation, this would play TTS audio from ElevenLabs
+            // For demo, we'll just log to console
+            console.log("Playing TTS audio...");
         }
     </script>
 </body>
